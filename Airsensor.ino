@@ -128,7 +128,8 @@ void loop() {
     Serial.println("ppm");
 
     // 60*1000ms=60초 동안 딜레이를 준다.
-    delay(60000);
+    // 측정할때 들어간 딜레이를 빼야한다.
+    delay(60000-READ_SAMPLE_INTERVAL*READ_SAMPLE_TIMES);
 
     if(++minute>60)
     {
