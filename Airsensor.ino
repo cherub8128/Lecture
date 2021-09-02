@@ -3,16 +3,46 @@
  MISO - pin 12
  CLK - pin 13
  CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
- CO2센서 - pin A0
- CH4센서 - pin A1
+ CO2센서 - pin A0 측정범위
+ CH4센서 - pin A1 측정범위 300pH~10000pH
 */
 
 #include <SPI.h>
 #include <SD.h>
+#include <MQUnifiedsensor.h>
+
+/************************Hardware Related Macros************************************/
+#define MG_PIN      (A0)    //아날로그 값을 입력받을 핀을 정의 
+#define BOOL_PIN    (2)     //디지털값을 입력받을 핀을 정의
+#define DC_GAIN     (8.5)   //증폭회로의 전압이득 정의(변경 X)
+
+/***********************Software Related Macros************************************/
+#define READ_SAMPLE_INTERVAL    (50)    //샘플 값 추출 간격
+#define READ_SAMPLE_TIMES       (5)     //추출할 샘플값의 갯수 
+                                        //추출할 샘플값들의 평균값이 측정값입니다.
+/**********************Application Related Macros**********************************/
+
+//These two values differ from sensor to sensor. user should derermine this value.
+#define ZERO_POINT_VOLTAGE  (0.324) //이산화 탄소가 400ppm일때의 전압값 (수정 X)
+#define REACTION_VOLTGAE    (0.020) //이산화 탄소가 1000ppm일때의 전압값(수정 X)
+/*****************************Globals***********************************************/
+float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
+
+
+/************************Hardware Related Macros************************************/
+#define         Board                   ("Arduino UNO")
+#define         Pin                     (A1)  //Analog input 4 of your arduino
+/***********************Software Related Macros************************************/
+#define         Type                    ("MQ-4") //MQ4
+#define         Voltage_Resolution      (5)
+#define         ADC_Bit_Resolution      (10) // For arduino UNO/MEGA/NANO
+#define         RatioMQ4CleanAir        (4.4) //RS / R0 = 60 ppm 
+/*****************************Globals***********************************************/
+MQUnifiedsensor MQ4(Board, Voltage_Resolution, ADC_Bit_Resolution, Pin, Type);
+
 
 File myFile;
 // 아날로그핀 A0, A1에 꽂힌 센서값 저장용 변수
-float val_A0 = 0;
 float val_A1 = 0;
 // 측정시간 기록
 int minute = 0;
@@ -46,30 +76,98 @@ void setup() {
     Serial.println("test.txt을 열 수 없습니다.");
     }
 
+    MQ4.setRegressionMethod("Exponential"); //_PPM =  a*ratio^b
+    MQ4.setA(1012.7); MQ4.setB(-2.786); // Configurate the ecuation values to get CH4 concentration
+    MQ4.setR0(3.86018237); // Value getted on calibration
 }
 
 void loop() {
-    // A0핀의 아날로그 값을 읽어서 val에 저장
-    val_A0 = analogRead(A0);
-    val_A1 = analogRead(A1);
+    volts = MGRead(MG_PIN);
+    percentage = MGGetPercentage(volts,CO2Curve);
+    MQ4.init();
+    MQ4.update();
+    float ppmCH4 = MQ4.readSensor();
 
-    myFile.println("C02 농도, %d일째 %d시 %d분, %f", day, hour, minute, val_A0);
-    myFile.println("CH4 농도, %d일째 %d시 %d분, %f", day, hour, minute, val_A1);
+    myFile.print(day);
+    myFile.print("일째");
+    myFile.print(hour);
+    myFile.print("시");
+    myFile.print(minute);
+    myFile.print("분,");
+    myFile.print("CO2 농도,");
+    if (percentage == -1) myFile.print( "<400" );
+    else myFile.print(percentage);
+    myFile.print("ppm,");
+    myFile.println("CH4 농도,");
+    myFile.print(ppmCH4);
+    myFile.print("pH");
 
     // 시리얼 화면에 읽은 값을 출력한다.
-    Serial.println("C02 농도, %d일째 %d시 %d분, %f", day, hour, minute, val_A0);
-    Serial.println("CH4 농도, %d일째 %d시 %d분, %f", day, hour, minute, val_A1);
+    Serial.print(day);
+    Serial.print("일째");
+    Serial.print(hour);
+    Serial.print("시");
+    Serial.print(minute);
+    Serial.print("분,");
+    Serial.print("CO2 농도,");
+    if (percentage == -1) Serial.print( "<400" );
+    else Serial.print(percentage);
+    Serial.print("pH,");
+    Serial.println("CH4 농도,");
+    Serial.print(val_A1);
+    Serial.print("pH");
 
     // 60*1000ms=60초 동안 딜레이를 준다.
     delay(60000);
 
     if(++minute>60)
     {
-        minute = 0
+        minute = 0;
         if(++hour>24)
         {
-            hour = 0
+            hour = 0;
             day++;
         }
     }
+}
+
+/*****************************  MGRead *********************************************
+Input:   mg_pin - analog channel
+Output:  output of SEN-000007
+Remarks: This function reads the output of SEN-000007
+************************************************************************************/
+
+float MGRead(int mg_pin)
+{
+    int i;
+    float v=0;
+
+    for (i=0;i<READ_SAMPLE_TIMES;i++) {
+        v += analogRead(mg_pin);
+        delay(READ_SAMPLE_INTERVAL);
+    }
+    v = (v/READ_SAMPLE_TIMES) *5/1024 ;
+    return v;
+}
+
+/*****************************  MQGetPercentage **********************************
+Input:   volts   - SEN-000007 output measured in volts
+         pcurve  - pointer to the curve of the target gas
+Output:  ppm of the target gas
+Remarks: By using the slope and a point of the line. The x(logarithmic value of ppm) 
+         of the line could be derived if y(MG-811 output) is provided. As it is a 
+         logarithmic coordinate, power of 10 is used to convert the result to non-logarithmic 
+         value.
+************************************************************************************/
+
+int  MGGetPercentage(float volts, float *pcurve)
+{
+   if ((volts/DC_GAIN )>=ZERO_POINT_VOLTAGE)
+   {
+      return -1;
+   } 
+   else 
+   { 
+      return pow(10, ((volts/DC_GAIN)-pcurve[1])/pcurve[2]+pcurve[0]);
+   }
 }
