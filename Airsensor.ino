@@ -76,7 +76,7 @@ void setup() {
     Serial.println("test.txt을 열 수 없습니다.");
     }
 
-    MQ4.setRegressionMethod("Exponential"); //_PPM =  a*ratio^b
+    MQ4.setRegressionMethod(1); //_PPM =  a*ratio^b
     MQ4.setA(1012.7); MQ4.setB(-2.786); // Configurate the ecuation values to get CH4 concentration
     MQ4.setR0(3.86018237); // Value getted on calibration
 }
@@ -98,9 +98,9 @@ void loop() {
     if (percentage == -1) myFile.print( "<400" );
     else myFile.print(percentage);
     myFile.print("ppm,");
-    myFile.println("CH4 농도,");
+    myFile.print("CH4 농도,");
     myFile.print(ppmCH4);
-    myFile.print("pH");
+    myFile.println("ppm");
 
     // 시리얼 화면에 읽은 값을 출력한다.
     Serial.print(day);
@@ -112,10 +112,10 @@ void loop() {
     Serial.print("CO2 농도,");
     if (percentage == -1) Serial.print( "<400" );
     else Serial.print(percentage);
-    Serial.print("pH,");
-    Serial.println("CH4 농도,");
-    Serial.print(val_A1);
-    Serial.print("pH");
+    Serial.print("ppm,");
+    Serial.print("CH4 농도,");
+    Serial.print(ppmCH4);
+    Serial.println("ppm");
 
     // 60*1000ms=60초 동안 딜레이를 준다.
     delay(60000);
