@@ -54,7 +54,7 @@ void setup() {
     Serial.begin(9600);
     pinMode(BOOL_PIN, INPUT);                        //set pin to input
     digitalWrite(BOOL_PIN, HIGH);                    //turn on pullup resistors
-    
+
     // MicroSD카드가 연결되지 않은 경우
     if (!SD.begin(4))
     {
@@ -84,6 +84,9 @@ void setup() {
 }
 
 void loop() {
+    int percentage;
+    float volts;
+
     volts = MGRead(MG_PIN);
     percentage = MGGetPercentage(volts,CO2Curve);
     MQ4.init();
