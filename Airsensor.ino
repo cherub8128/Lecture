@@ -23,8 +23,8 @@
 /**********************Application Related Macros**********************************/
 
 //These two values differ from sensor to sensor. user should derermine this value.
-#define ZERO_POINT_VOLTAGE  (0.220) //이산화 탄소가 400ppm일때의 전압값 (수정 X)
-#define REACTION_VOLTGAE    (0.030) //이산화 탄소가 1000ppm일때의 전압값(수정 X)
+#define ZERO_POINT_VOLTAGE  (0.212) //이산화 탄소가 400ppm일때의 전압값
+#define REACTION_VOLTGAE    (0.030) //이산화 탄소가 1000ppm일때의 전압값
 /*****************************Globals***********************************************/
 float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
                                                      //two points are taken from the curve.
@@ -92,7 +92,7 @@ void loop() {
     float volts;
 
     volts = MGRead(MG_PIN);
-    Serial.println(volts) //깨끗한 공기(이산화탄소가 없는 공기)에서 측정 후 8.5로 나누어 ZERO_POINT_VOLTAGE로 둔다.
+    Serial.println(volts) //깨끗한 공기에서 측정 후 8.5로 나누어 ZERO_POINT_VOLTAGE로 둔다. 힘은 주지말고 볼트를 반시계로 최대한 조여보자.
     percentage = MGGetPercentage(volts,CO2Curve);
     MQ4.init();
     MQ4.update();
