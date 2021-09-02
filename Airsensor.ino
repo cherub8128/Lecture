@@ -27,7 +27,11 @@
 #define REACTION_VOLTGAE    (0.030) //이산화 탄소가 1000ppm일때의 전압값(수정 X)
 /*****************************Globals***********************************************/
 float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
-
+                                                     //two points are taken from the curve.
+                                                     //with these two points, a line is formed which is
+                                                     //"approximately equivalent" to the original curve.
+                                                     //data format:{ x, y, slope}; point1: (lg400, 0.324), point2: (lg4000, 0.280)
+                                                     //slope = ( reaction voltage ) / (log400 –log1000)
 
 /************************Hardware Related Macros************************************/
 #define         Board                   ("Arduino UNO")
@@ -88,6 +92,7 @@ void loop() {
     float volts;
 
     volts = MGRead(MG_PIN);
+    Serial.println(volts) //깨끗한 공기(이산화탄소가 없는 공기)에서 측정 후 8.5로 나누어 ZERO_POINT_VOLTAGE로 둔다.
     percentage = MGGetPercentage(volts,CO2Curve);
     MQ4.init();
     MQ4.update();
