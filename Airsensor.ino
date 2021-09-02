@@ -23,8 +23,8 @@
 /**********************Application Related Macros**********************************/
 
 //These two values differ from sensor to sensor. user should derermine this value.
-#define ZERO_POINT_VOLTAGE  (0.324) //이산화 탄소가 400ppm일때의 전압값 (수정 X)
-#define REACTION_VOLTGAE    (0.020) //이산화 탄소가 1000ppm일때의 전압값(수정 X)
+#define ZERO_POINT_VOLTAGE  (0.220) //이산화 탄소가 400ppm일때의 전압값 (수정 X)
+#define REACTION_VOLTGAE    (0.030) //이산화 탄소가 1000ppm일때의 전압값(수정 X)
 /*****************************Globals***********************************************/
 float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
 
@@ -52,7 +52,9 @@ unsigned long day = 0;
 void setup() {
     // 시리얼 통신 열기:
     Serial.begin(9600);
-
+    pinMode(BOOL_PIN, INPUT);                        //set pin to input
+    digitalWrite(BOOL_PIN, HIGH);                    //turn on pullup resistors
+    
     // MicroSD카드가 연결되지 않은 경우
     if (!SD.begin(4))
     {
