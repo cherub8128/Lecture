@@ -11,10 +11,12 @@
 #include <SD.h>
 #include <MQUnifiedsensor.h>
 
+
+//이산화탄소 센서 관련
 /************************Hardware Related Macros************************************/
-#define MG_PIN      (A0)    //아날로그 값을 입력받을 핀을 정의 
+#define MG_PIN      (A1)    //CO2센서 아날로그 값을 입력 받을 핀
 #define BOOL_PIN    (2)     //디지털값을 입력받을 핀을 정의
-#define DC_GAIN     (8.5)   //증폭회로의 전압이득 정의(변경 X)
+#define DC_GAIN     (5)     //CO2 센서에 걸리는 전압
 
 /***********************Software Related Macros************************************/
 #define READ_SAMPLE_INTERVAL    (50)    //샘플 값 추출 간격
@@ -23,7 +25,7 @@
 /**********************Application Related Macros**********************************/
 
 //These two values differ from sensor to sensor. user should derermine this value.
-#define ZERO_POINT_VOLTAGE  (0.212) //이산화 탄소가 400ppm일때의 전압값
+#define ZERO_POINT_VOLTAGE  (0.212) //이산화 탄소가 400ppm일때의 전압값 (깨끗한 공기에서 측정한 아날로그 리드 값으로 정한다.)
 #define REACTION_VOLTGAE    (0.030) //이산화 탄소가 1000ppm일때의 전압값
 /*****************************Globals***********************************************/
 float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
@@ -32,10 +34,14 @@ float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
                                                      //"approximately equivalent" to the original curve.
                                                      //data format:{ x, y, slope}; point1: (lg400, 0.324), point2: (lg4000, 0.280)
                                                      //slope = ( reaction voltage ) / (log400 –log1000)
+int percentage;
+float volts;
 
+
+//메탄센서관련
 /************************Hardware Related Macros************************************/
 #define         Board                   ("Arduino UNO")
-#define         Pin                     (A1)  //Analog input 4 of your arduino
+#define         Pin                     (A0)  //메탄 센서 아날로그 입력 받을 핀
 /***********************Software Related Macros************************************/
 #define         Type                    ("MQ-4") //MQ4
 #define         Voltage_Resolution      (5)
@@ -44,7 +50,46 @@ float CO2Curve[3] = {2.602,ZERO_POINT_VOLTAGE,(REACTION_VOLTGAE/(2.602-3))};
 /*****************************Globals***********************************************/
 MQUnifiedsensor MQ4(Board, Voltage_Resolution, ADC_Bit_Resolution, Pin, Type);
 
+/*****************************  MGRead *********************************************
+Input:   mg_pin - analog channel
+Output:  output of SEN-000007
+Remarks: This function reads the output of SEN-000007
+************************************************************************************/
+float MGRead(int mg_pin)
+{
+    int i;
+    float v=0;
 
+    for (i=0;i<READ_SAMPLE_TIMES;i++) {
+        v += analogRead(mg_pin);
+        delay(READ_SAMPLE_INTERVAL);
+    }
+    v = (v/READ_SAMPLE_TIMES) *5/1024 ;
+    return v;
+}
+/*****************************  MQGetPercentage **********************************
+Input:   volts   - SEN-000007 output measured in volts
+         pcurve  - pointer to the curve of the target gas
+Output:  ppm of the target gas
+Remarks: By using the slope and a point of the line. The x(logarithmic value of ppm) 
+         of the line could be derived if y(MG-811 output) is provided. As it is a 
+         logarithmic coordinate, power of 10 is used to convert the result to non-logarithmic 
+         value.
+************************************************************************************/
+
+int  MGGetPercentage(float volts, float *pcurve)
+{
+   if ((volts/DC_GAIN )>=ZERO_POINT_VOLTAGE)
+   {
+      return -1;
+   } 
+   else 
+   { 
+      return pow(10, ((volts/DC_GAIN)-pcurve[1])/pcurve[2]+pcurve[0]);
+   }
+}
+
+//파일 입출력
 File myFile;
 // 아날로그핀 A0, A1에 꽂힌 센서값 저장용 변수
 float val_A1 = 0;
@@ -88,16 +133,17 @@ void setup() {
 }
 
 void loop() {
-    int percentage;
-    float volts;
 
+    //이산화탄소 센서 읽어오기
     volts = MGRead(MG_PIN);
-    Serial.println(volts) //깨끗한 공기에서 측정 후 8.5로 나누어 ZERO_POINT_VOLTAGE로 둔다. 힘은 주지말고 볼트를 반시계로 최대한 조여보자.
     percentage = MGGetPercentage(volts,CO2Curve);
+
+    //메탄 센서 읽어오기
     MQ4.init();
     MQ4.update();
     float ppmCH4 = MQ4.readSensor();
 
+    //파일에 저장하기
     myFile.print(day);
     myFile.print("일째");
     myFile.print(hour);
@@ -112,25 +158,26 @@ void loop() {
     myFile.print(ppmCH4);
     myFile.println("ppm");
 
-    // 시리얼 화면에 읽은 값을 출력한다.
+    // 시리얼 화면에 읽은 값을 출력하기.
     Serial.print(day);
     Serial.print("일째");
     Serial.print(hour);
     Serial.print("시");
     Serial.print(minute);
     Serial.print("분,");
-    Serial.print("CO2 농도,");
+    Serial.print("CO2센서 아날로그 리드: ");
+    Serial.print(analogRead(MG_PIN));
+    Serial.print(", CO2 농도: ");
     if (percentage == -1) Serial.print( "<400" );
     else Serial.print(percentage);
-    Serial.print("ppm,");
-    Serial.print("CH4 농도,");
+    Serial.print("ppm, ");
+    Serial.print("CH4 농도:");
     Serial.print(ppmCH4);
-    Serial.println("ppm");
+    Serial.println("ppm.");
 
     // 60*1000ms=60초 동안 딜레이를 준다.
     // 측정할때 들어간 딜레이를 빼야한다.
     delay(60000-READ_SAMPLE_INTERVAL*READ_SAMPLE_TIMES);
-
     if(++minute>60)
     {
         minute = 0;
@@ -140,45 +187,4 @@ void loop() {
             day++;
         }
     }
-}
-
-/*****************************  MGRead *********************************************
-Input:   mg_pin - analog channel
-Output:  output of SEN-000007
-Remarks: This function reads the output of SEN-000007
-************************************************************************************/
-
-float MGRead(int mg_pin)
-{
-    int i;
-    float v=0;
-
-    for (i=0;i<READ_SAMPLE_TIMES;i++) {
-        v += analogRead(mg_pin);
-        delay(READ_SAMPLE_INTERVAL);
-    }
-    v = (v/READ_SAMPLE_TIMES) *5/1024 ;
-    return v;
-}
-
-/*****************************  MQGetPercentage **********************************
-Input:   volts   - SEN-000007 output measured in volts
-         pcurve  - pointer to the curve of the target gas
-Output:  ppm of the target gas
-Remarks: By using the slope and a point of the line. The x(logarithmic value of ppm) 
-         of the line could be derived if y(MG-811 output) is provided. As it is a 
-         logarithmic coordinate, power of 10 is used to convert the result to non-logarithmic 
-         value.
-************************************************************************************/
-
-int  MGGetPercentage(float volts, float *pcurve)
-{
-   if ((volts/DC_GAIN )>=ZERO_POINT_VOLTAGE)
-   {
-      return -1;
-   } 
-   else 
-   { 
-      return pow(10, ((volts/DC_GAIN)-pcurve[1])/pcurve[2]+pcurve[0]);
-   }
 }
