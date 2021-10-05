@@ -9,13 +9,13 @@ ESP8266WiFiMulti WiFiMulti; //WiFi 관련 설정
 int minute = 60000;
 float theta = 16.1;
 
-//아래의 두 줄에서 따옴표 안쪽 부분만 수정해주세요.
-char* ssid = "KT_GiGA_2G_6F10";
-char* pw = "3cx42kb027";
+//아래의 두 줄에서 따옴표 안쪽 부분을 수정해주세요.
+char* ssid = "와이파이 이름";
+char* pw = "와이파이 비번";
+String url = "구글 스크립트 편집기 배포 웹 앱 URL";
 
 void setup() {
 
-    //시리얼 통신 시작(보 레이트 - 1초에 몇 바이트 속도로 통신할 것인지)
     Serial.begin(115200);
     Serial.print("모니터링 시작");
 
@@ -49,7 +49,6 @@ void loop() {
     Serial.println(temperature);
 
     // 인터넷에 값 올리기
-    String url = "https://script.google.com/macros/s/AKfycbyG3K4sireewChPl6gqTgt0EQvU6Rw83tKHOtNN0qlKx7SqBFCRi31gml20PUwVDgxSug/exec?x=";
     if (https.begin(*client, url+String(temperature,1))) {
         int httpCode = https.GET();
         https.end();
