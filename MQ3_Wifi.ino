@@ -75,7 +75,7 @@ void loop() {
     MQ3.serialDebug(); // Will print the table on the serial port
 
     // 인터넷에 값 올리기
-    if (https.begin(*client, url+String(MQ3._PPM,1))) {
+    if (https.begin(*client, url+String(MQ3._PPM,2))) {
         int httpCode = https.GET();
         https.end();
        
