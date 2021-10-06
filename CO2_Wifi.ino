@@ -9,15 +9,36 @@ ESP8266WiFiMulti WiFiMulti; //WiFi 관련 설정
 int minute = 60000;
 float theta = 16.1;
 
-//아래의 두 줄에서 따옴표 안쪽 부분을 수정해주세요.
+/***********!! 아래의 세 줄에서 따옴표 안쪽 부분을 수정해주세요. !!**************************/
 char* ssid = "와이파이 이름";
 char* pw = "와이파이 비번";
 String url = "구글 스크립트 편집기 배포 웹 앱 URL";
+/***********!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!**************************/
 
 void setup() {
 
     Serial.begin(115200);
     Serial.print("모니터링 시작");
+
+    //MQ센서 부분
+    //Set math model to calculate the PPM concentration and the value of constants
+    MQ3.setRegressionMethod(1); //_PPM =  a*ratio^b
+    MQ3.setA(4.8387); MQ3.setB(-2.68); // Configurate the ecuation values to get Benzene concentration
+    MQ3.init();
+    Serial.print("Calibrating please wait.");
+    float calcR0 = 0;
+    for(int i = 1; i<=10; i ++)
+    {
+        MQ3.update(); // Update data, the arduino will be read the voltage on the analog pin
+        calcR0 += MQ3.calibrate(RatioMQ3CleanAir);
+        Serial.print(".");
+    }
+    MQ3.setR0(calcR0/10);
+    Serial.println("  done!.");
+    if(isinf(calcR0)) {Serial.println("Warning: Conection issue founded, R0 is infite (Open circuit detected) please check your wiring and supply"); while(1);}
+    if(calcR0 == 0){Serial.println("Warning: Conection issue founded, R0 is zero (Analog pin with short circuit to ground) please check your wiring and supply"); while(1);}
+    /*****************************  MQ CAlibration ********************************************/ 
+    MQ3.serialDebug(true);
 
     //와이파이 접속 부분
     WiFi.mode(WIFI_STA);
@@ -38,22 +59,16 @@ void loop() {
     client->setInsecure();
     HTTPClient https;
 
-    // A0에 꽂힌 센서 값 가져오기
-    float A0_val = analogRead(0);
-
-    // 온도
-    float temperature = A0_val/10+theta;
-
-    // 시리얼 모니터에 온도 출력
-    Serial.println(A0_val);
-    Serial.println(temperature);
+    MQ3.update(); // Update data, the arduino will be read the voltage on the analog pin
+    MQ3.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
+    MQ3.serialDebug(); // Will print the table on the serial port
 
     // 인터넷에 값 올리기
-    if (https.begin(*client, url+String(temperature,1))) {
+    if (https.begin(*client, url+String(MQ3._PPM,1))) {
         int httpCode = https.GET();
         https.end();
        
-        // 값 업로드 성공하면 1분 간 기다리기
-        delay(1*minute); 
+        // 값 업로드 성공하면 5초(5000ms) 간 기다리기
+        delay(5000); 
     }
 }

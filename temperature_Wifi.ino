@@ -9,10 +9,11 @@ ESP8266WiFiMulti WiFiMulti; //WiFi 관련 설정
 int minute = 60000;
 float theta = 16.1;
 
-//아래의 두 줄에서 따옴표 안쪽 부분을 수정해주세요.
+/***********!! 아래의 세 줄에서 따옴표 안쪽 부분을 수정해주세요. !!**************************/
 char* ssid = "와이파이 이름";
 char* pw = "와이파이 비번";
 String url = "구글 스크립트 편집기 배포 웹 앱 URL";
+/***********!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!**************************/
 
 void setup() {
 
@@ -27,7 +28,7 @@ void setup() {
       Serial.println("No Connect");
       delay(1000);
     }
-    Serial.println(WiFi.localIP());
+    Serial.print(WiFi.localIP()); Serial.println("Connected");
 
 }
 
