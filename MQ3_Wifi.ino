@@ -35,7 +35,17 @@ void setup() {
     /*****************************  MQ 센서 설정 ********************************************/
     //Set math model to calculate the PPM concentration and the value of constants
     MQ3.setRegressionMethod(1); //_PPM =  a*ratio^b
-    MQ3.setA(4.8387); MQ3.setB(-2.68); // Configurate the ecuation values to get Benzene concentration
+    MQ3.setA(0.3934); MQ3.setB(-1.504); // 아래의 표에 맞게 A,B 값을 설정합니다.
+    /*
+    Exponential regression:
+    Gas    | a      | b
+    LPG    | 44771  | -3.245
+    CH4    | 2*10^31| 19.01
+    CO     | 521853 | -3.821
+    Alcohol| 0.3934 | -1.504
+    Benzene| 4.8387 | -2.68
+    Hexane | 7585.3 | -2.849
+    */
     MQ3.init();
     Serial.print("Calibrating please wait.");
     float calcR0 = 0;
@@ -75,7 +85,7 @@ void loop() {
     MQ3.serialDebug(); // Will print the table on the serial port
 
     // 인터넷에 값 올리기
-    if (https.begin(*client, url+String(PPM,2))) {
+    if (https.begin(*client, url+String(PPM,5))) {
         int httpCode = https.GET();
         https.end();
        

@@ -36,7 +36,16 @@ void setup() {
     /*****************************  MQ 센서 설정 ********************************************/
     //Set math model to calculate the PPM concentration and the value of constants
     MQ7.setRegressionMethod(1); //_PPM =  a*ratio^b
-    MQ7.setA(99.042); MQ7.setB(-1.518); // Configurate the ecuation values to get Benzene concentration
+    MQ7.setA(99.042); MQ7.setB(-1.518); // Configurate the ecuation values to get CO concentration
+    /*
+    Exponential regression:
+    GAS     | a      | b
+    H2      | 69.014  | -1.374
+    LPG     | 700000000 | -7.703
+    CH4     | 60000000000000 | -10.54
+    CO      | 99.042 | -1.518
+    Alcohol | 40000000000000000 | -12.35
+    */
     MQ7.init();
     Serial.print("Calibrating please wait.");
     float calcR0 = 0;
@@ -75,9 +84,9 @@ void loop() {
     MQ7.update(); // Update data, the arduino will be read the voltage on the analog pin
     float PPM = MQ7.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
     MQ7.serialDebug(); // Will print the table on the serial port
-
+    
     // 인터넷에 값 올리기
-    if (https.begin(*client, url+String(MQ7._PPM,2))) {
+    if (https.begin(*client, url+String(MQ7._PPM,5))) {
         int httpCode = https.GET();
         https.end();
        
