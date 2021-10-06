@@ -73,7 +73,7 @@ void loop() {
     HTTPClient https;
 
     MQ7.update(); // Update data, the arduino will be read the voltage on the analog pin
-    MQ7.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
+    float PPM = MQ7.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
     MQ7.serialDebug(); // Will print the table on the serial port
 
     // 인터넷에 값 올리기

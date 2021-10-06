@@ -71,11 +71,11 @@ void loop() {
     HTTPClient https;
 
     MQ3.update(); // Update data, the arduino will be read the voltage on the analog pin
-    MQ3.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
+    float PPM = MQ3.readSensor(); // Sensor will read PPM concentration using the model and a and b values setted before or in the setup
     MQ3.serialDebug(); // Will print the table on the serial port
 
     // 인터넷에 값 올리기
-    if (https.begin(*client, url+String(MQ3._PPM,2))) {
+    if (https.begin(*client, url+String(PPM,2))) {
         int httpCode = https.GET();
         https.end();
        
