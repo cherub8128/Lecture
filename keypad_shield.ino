@@ -21,32 +21,74 @@ void setup() {
 
 void loop() {
 
-    // A1에 꽂힌 센서 값 가져오기
-    float A1_val = analogRead(1);
+    current_time = millis() / 1000;
+    if (current_time - prev_time >= set_time) 
+    {
+        // 이 안쪽은 1초에 한번씩 반복하는 코드
+        // A1에 꽂힌 센서 값 가져오기
+        float A1_val = analogRead(1);
 
-    // 온도
-    float temperature = A1_val*0.1+15.9;
+        // 온도
+        float temperature = A1_val*0.1+15.9;
 
-    // 시리얼 모니터에 온도 출력
-    Serial.println(A1_val);
-    Serial.println(temperature);
+        // 시리얼 모니터에 온도 출력
+        Serial.println(A1_val);
+        Serial.println(temperature);
 
-    // 키패드 쉴드에 온도 출력
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print(String(temperature,1)+"*C");
+        // 키패드 쉴드에 온도 출력
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print(String(temperature,1)+"*C");
+        prev_time = current_time;
 
+    }
+
+    //버튼 눌렸을 때 움직임
+    LCD_Buttons();
 }
 
 // 키패드 쉴드 함수 아날로그 A0의 값에서 버튼 신호를 받는다.
-// 버튼이 눌리면 위:u, 아래:d, 왼쪽:l, 오른쪽:r, 왼쪽:l, 선택:s 의 글자로 내보내준다.
-// 현재는 센서랑 동시에 사용 불가
-char read_LCD_Buttons() {
+// 버튼이 눌리면 위:u, 아래:d, 왼쪽:l, 오른쪽:r, 왼쪽:l, 선택:s, 아무것도 누르지 않을때: n을 글자로 내보내준다.
+char LCD_Buttons() {
     int input = analogRead(0);
-    if (input < 50) return 'r';
-    else if (input < 175) return 'u';
-    else if (input < 330) return 'd';
-    else if (input < 520) return 'l';
-    else if (input < 830) return 's';
-    else return 'n';
+    if (input < 50) 
+    {
+        // 오른쪽 버튼이 눌렸을 때 할 일을 쓴다.
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("RIGHT");
+        return 'r';
+    }
+    else if (input < 175) 
+    {
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("UP");
+        return 'u';
+    }
+    else if (input < 330)
+    {
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("DOWN");
+        return 'd';
+    } 
+    else if (input < 520) 
+    {
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("LEFT");
+        return 'l';
+    }
+    else if (input < 830)
+    {
+        lcd.clear();
+        lcd.setCursor(0,1);
+        lcd.print("SELECT");
+        return 's';
+    }
+    else
+    {
+        return 'n';
+    }
 }
