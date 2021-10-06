@@ -53,7 +53,7 @@ char LCD_Buttons() {
     int input = analogRead(0);
     if (input < 50) 
     {
-        // 오른쪽 버튼이 눌렸을 때 할 일을 쓴다.
+        // 오른쪽 버튼이 눌렸을 때
         lcd.clear();
         lcd.setCursor(0,1);
         lcd.print("RIGHT");
@@ -61,6 +61,7 @@ char LCD_Buttons() {
     }
     else if (input < 175) 
     {
+        // 위쪽 버튼이 눌렸을 때
         lcd.clear();
         lcd.setCursor(0,1);
         lcd.print("UP");
@@ -68,6 +69,7 @@ char LCD_Buttons() {
     }
     else if (input < 330)
     {
+        // 아래 버튼이 눌렸을 때
         lcd.clear();
         lcd.setCursor(0,1);
         lcd.print("DOWN");
@@ -75,6 +77,7 @@ char LCD_Buttons() {
     } 
     else if (input < 520) 
     {
+        // 왼쪽 버튼이 눌렸을 때
         lcd.clear();
         lcd.setCursor(0,1);
         lcd.print("LEFT");
@@ -82,6 +85,7 @@ char LCD_Buttons() {
     }
     else if (input < 830)
     {
+        // 선택 버튼이 눌렸을 때
         lcd.clear();
         lcd.setCursor(0,1);
         lcd.print("SELECT");
@@ -89,6 +93,7 @@ char LCD_Buttons() {
     }
     else
     {
+        // 아무것도 누르지 않은 경우
         return 'n';
     }
 }
